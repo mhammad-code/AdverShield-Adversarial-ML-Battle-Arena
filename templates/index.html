@@ -1,0 +1,2045 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AdverShield - Adversarial ML Battle System</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <style>
+        :root {
+            --bg-base: #0b0d14;
+            --bg-card: #11141f;
+            --bg-card2: #161a28;
+            --bg-inset: #0d1020;
+            --border: rgba(255, 255, 255, 0.07);
+            --red: #ff3b5c;
+            --green: #00e5a0;
+            --blue: #4f8ef7;
+            --purple: #8b5cf6;
+            --gold: #f5c518;
+            --text: #e2e8f0;
+            --muted: #8892a4;
+            --radius: 12px;
+            --radius-sm: 8px;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg-base);
+            color: var(--text);
+            min-height: 100vh;
+            font-size: 14px;
+        }
+
+        /* ── TOP NAV ── */
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 28px;
+            height: 60px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .topbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--blue), var(--purple));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .brand-name {
+            font-family: 'Space Mono', monospace;
+            font-size: 17px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -0.5px;
+        }
+
+        .brand-sub {
+            font-size: 10px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 6px 14px;
+            background: rgba(0, 229, 160, 0.08);
+            border: 1px solid rgba(0, 229, 160, 0.25);
+            border-radius: 50px;
+            font-size: 12px;
+            color: var(--green);
+            font-weight: 600;
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 6px var(--green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: 0.4
+            }
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--red), var(--purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 700;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        /* ── LAYOUT ── */
+        .page {
+            display: grid;
+            grid-template-columns: 290px 1fr 290px;
+            gap: 0;
+            min-height: calc(100vh - 60px);
+        }
+
+        .col {
+            padding: 20px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .col-left {
+            border-right: 1px solid var(--border);
+        }
+
+        .col-right {
+            border-left: 1px solid var(--border);
+        }
+
+        /* ── CARDS ── */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .card-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .card-title {
+            font-size: 11px;
+            letter-spacing: 1.8px;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: var(--muted);
+        }
+
+        .card-body {
+            padding: 16px 18px;
+        }
+
+        /* ── BADGES ── */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 10px;
+            border-radius: 50px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+        }
+
+        .badge-red {
+            background: rgba(255, 59, 92, .15);
+            color: var(--red);
+            border: 1px solid rgba(255, 59, 92, .3);
+        }
+
+        .badge-green {
+            background: rgba(0, 229, 160, .15);
+            color: var(--green);
+            border: 1px solid rgba(0, 229, 160, .3);
+        }
+
+        .badge-blue {
+            background: rgba(79, 142, 247, .15);
+            color: var(--blue);
+            border: 1px solid rgba(79, 142, 247, .3);
+        }
+
+        .badge-purple {
+            background: rgba(139, 92, 246, .15);
+            color: var(--purple);
+            border: 1px solid rgba(139, 92, 246, .3);
+        }
+
+        .badge-gold {
+            background: rgba(245, 197, 24, .15);
+            color: var(--gold);
+            border: 1px solid rgba(245, 197, 24, .3);
+        }
+
+        /* ── SELECT TARGET ── */
+        .target-num {
+            font-size: 10px;
+            color: var(--muted);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .target-ready {
+            font-size: 11px;
+            color: var(--green);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .image-preview-wrap {
+            width: 100%;
+            aspect-ratio: 1;
+            background: var(--bg-inset);
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+            border: 1px solid var(--border);
+            position: relative;
+        }
+
+        .image-preview-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+
+        .img-placeholder {
+            color: var(--muted);
+            font-size: 12px;
+            text-align: center;
+        }
+
+        .img-placeholder span {
+            font-size: 32px;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .img-btn-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .img-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 10px;
+            background: var(--bg-card2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all .2s;
+            font-family: inherit;
+        }
+
+        .img-btn:hover {
+            border-color: var(--blue);
+            background: rgba(79, 142, 247, .08);
+            color: var(--blue);
+        }
+
+        .target-class-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            background: var(--bg-inset);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+        }
+
+        .target-class-label {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .target-class-val {
+            font-family: 'Space Mono', monospace;
+            font-size: 13px;
+            color: var(--green);
+            font-weight: 700;
+        }
+
+        /* ── BATTLE ARENA ── */
+        .arena-section-label {
+            font-size: 10px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .label-red {
+            color: var(--red);
+        }
+
+        .label-green {
+            color: var(--green);
+        }
+
+        .sel {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--bg-inset);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-size: 13px;
+            font-family: inherit;
+            cursor: pointer;
+            margin-bottom: 10px;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238892a4' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 36px;
+            transition: border-color .2s;
+        }
+
+        .sel:focus {
+            outline: none;
+            border-color: var(--blue);
+        }
+
+        .run-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--blue), var(--purple));
+            border: none;
+            border-radius: var(--radius-sm);
+            color: #fff;
+            font-size: 15px;
+            font-weight: 700;
+            font-family: 'Space Mono', monospace;
+            cursor: pointer;
+            letter-spacing: 0.5px;
+            transition: all .2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .run-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(79, 142, 247, .35);
+        }
+
+        .run-btn:disabled {
+            opacity: .45;
+            cursor: not-allowed;
+        }
+
+        /* ── CENTER: BATTLE RESULTS ── */
+        .heatmap-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .heatmap-item {
+            background: var(--bg-inset);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 10px;
+            text-align: center;
+        }
+
+        .heatmap-item img {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            border-radius: 6px;
+            background: #0a0c14;
+        }
+
+        .heatmap-label {
+            font-size: 10px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-top: 8px;
+        }
+
+        .heatmap-conf {
+            font-family: 'Space Mono', monospace;
+            font-size: 14px;
+            font-weight: 700;
+            margin-top: 4px;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .metric-box {
+            background: var(--bg-inset);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 12px;
+            text-align: center;
+        }
+
+        .metric-key {
+            font-size: 9px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        .metric-val {
+            font-family: 'Space Mono', monospace;
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .metric-val.up {
+            color: var(--green);
+        }
+
+        .metric-val.down {
+            color: var(--red);
+        }
+
+        /* attacker/defender logic boxes */
+        .logic-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .logic-box {
+            border-radius: var(--radius-sm);
+            padding: 14px;
+        }
+
+        .logic-box.atk {
+            background: rgba(255, 59, 92, .07);
+            border: 1px solid rgba(255, 59, 92, .2);
+        }
+
+        .logic-box.def {
+            background: rgba(0, 229, 160, .07);
+            border: 1px solid rgba(0, 229, 160, .2);
+        }
+
+        .logic-box-head {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+
+        .logic-box.atk .logic-box-head {
+            color: var(--red);
+        }
+
+        .logic-box.def .logic-box-head {
+            color: var(--green);
+        }
+
+        .logic-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .logic-icon.atk {
+            background: rgba(255, 59, 92, .2);
+        }
+
+        .logic-icon.def {
+            background: rgba(0, 229, 160, .2);
+        }
+
+        .logic-text {
+            font-size: 12px;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        /* GradCAM */
+        .gradcam-box {
+            background: var(--bg-inset);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+        }
+
+        .gradcam-label {
+            font-size: 10px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 10px;
+        }
+
+        .gradcam-text {
+            font-size: 13px;
+            color: var(--text);
+            font-style: italic;
+            line-height: 1.7;
+        }
+
+        /* AI Analysis panel */
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .analysis-cell {
+            border-radius: var(--radius-sm);
+            padding: 14px;
+        }
+
+        .analysis-cell.attack-why {
+            background: rgba(255, 59, 92, .06);
+            border: 1px solid rgba(255, 59, 92, .18);
+        }
+
+        .analysis-cell.defend-why {
+            background: rgba(0, 229, 160, .06);
+            border: 1px solid rgba(0, 229, 160, .18);
+        }
+
+        .analysis-cell.atk-out {
+            background: rgba(79, 142, 247, .06);
+            border: 1px solid rgba(79, 142, 247, .18);
+        }
+
+        .analysis-cell.def-out {
+            background: rgba(245, 197, 24, .06);
+            border: 1px solid rgba(245, 197, 24, .18);
+        }
+
+        .analysis-cell-title {
+            font-size: 11px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .analysis-cell.attack-why .analysis-cell-title {
+            color: var(--red);
+        }
+
+        .analysis-cell.defend-why .analysis-cell-title {
+            color: var(--green);
+        }
+
+        .analysis-cell.atk-out .analysis-cell-title {
+            color: var(--blue);
+        }
+
+        .analysis-cell.def-out .analysis-cell-title {
+            color: var(--gold);
+        }
+
+        .analysis-cell-text {
+            font-size: 12px;
+            color: var(--muted);
+            line-height: 1.6;
+            font-family: 'Space Mono', monospace;
+        }
+
+        .key-insight {
+            margin-top: 12px;
+            background: rgba(139, 92, 246, .12);
+            border: 1px solid rgba(139, 92, 246, .25);
+            border-radius: var(--radius-sm);
+            padding: 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .key-insight-icon {
+            font-size: 22px;
+        }
+
+        .key-insight-text {
+            font-size: 14px;
+            color: #fff;
+            font-weight: 600;
+        }
+
+        /* Strategy ops */
+        .strategy-box {
+            background: var(--bg-inset);
+            border-radius: var(--radius-sm);
+            padding: 12px;
+            margin-top: 8px;
+        }
+
+        .strategy-reason {
+            font-size: 12px;
+            color: var(--muted);
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+
+        .ops-list {
+            list-style: none;
+        }
+
+        .ops-list li {
+            background: rgba(255, 255, 255, .04);
+            margin-bottom: 4px;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 11px;
+            color: var(--muted);
+            font-family: 'Space Mono', monospace;
+        }
+
+        /* ── RIGHT COLUMN ── */
+        .stat-pair {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .stat-tile {
+            background: var(--bg-inset);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 14px;
+            text-align: center;
+        }
+
+        .stat-tile-val {
+            font-family: 'Space Mono', monospace;
+            font-size: 28px;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 6px;
+        }
+
+        .stat-tile-val.wins {
+            color: var(--green);
+        }
+
+        .stat-tile-val.losses {
+            color: var(--red);
+        }
+
+        .stat-tile-label {
+            font-size: 10px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .donut-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 0;
+        }
+
+        .donut-wrap canvas {
+            max-height: 160px;
+        }
+
+        /* RL log */
+        .rl-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            padding: 14px 18px;
+        }
+
+        .rl-stat {
+            text-align: center;
+        }
+
+        .rl-stat-val {
+            font-family: 'Space Mono', monospace;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .rl-stat-label {
+            font-size: 10px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        .log-entries {
+            max-height: 180px;
+            overflow-y: auto;
+            padding: 12px 18px;
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            background: var(--bg-inset);
+            margin: 0 14px 14px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+        }
+
+        .log-entry {
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, .03);
+            line-height: 1.5;
+        }
+
+        .log-entry.pos {
+            color: var(--green);
+        }
+
+        .log-entry.neg {
+            color: var(--red);
+        }
+
+        .learning-chart-wrap {
+            padding: 0 14px 14px;
+        }
+
+        /* Charts panel */
+        .chart-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+            overflow-x: auto;
+        }
+
+        .chart-tab {
+            padding: 11px 14px;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--muted);
+            cursor: pointer;
+            font-size: 11px;
+            font-family: inherit;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: all .2s;
+        }
+
+        .chart-tab:hover {
+            color: var(--text);
+        }
+
+        .chart-tab.active {
+            color: #fff;
+            border-bottom-color: var(--blue);
+        }
+
+        .chart-pane {
+            padding: 16px;
+            display: none;
+        }
+
+        .chart-pane.active {
+            display: block;
+        }
+
+        .mini-stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .mini-stat {
+            background: var(--bg-inset);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 10px;
+            text-align: center;
+        }
+
+        .mini-stat-val {
+            font-family: 'Space Mono', monospace;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .mini-stat-label {
+            font-size: 9px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-top: 3px;
+        }
+
+        /* battle history scroll */
+        .battle-list {
+            max-height: 240px;
+            overflow-y: auto;
+            padding: 12px 14px;
+        }
+
+        .battle-item {
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            background: var(--bg-inset);
+            margin-bottom: 8px;
+            border-left: 3px solid var(--red);
+            border: 1px solid var(--border);
+            border-left-width: 3px;
+        }
+
+        .battle-item.def {
+            border-left-color: var(--green);
+        }
+
+        .battle-item-info {
+            font-size: 11px;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+
+        .battle-item-result {
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .battle-item-result.atk-win {
+            color: var(--red);
+        }
+
+        .battle-item-result.def-win {
+            color: var(--green);
+        }
+
+        /* coach */
+        .coach-body {
+            padding: 14px 18px;
+        }
+
+        .coach-msg {
+            background: rgba(0, 229, 160, .07);
+            border: 1px solid rgba(0, 229, 160, .2);
+            border-radius: var(--radius-sm);
+            padding: 14px;
+            margin-top: 12px;
+            font-size: 13px;
+            color: var(--text);
+            line-height: 1.7;
+            display: none;
+        }
+
+        .coach-msg.show {
+            display: block;
+        }
+
+        .coach-msg-title {
+            color: var(--green);
+            font-weight: 700;
+            font-size: 11px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        /* loading spinner */
+        .spinner-wrap {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 3px solid var(--bg-inset);
+            border-top-color: var(--blue);
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 8px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .api-warning {
+            background: rgba(255, 59, 92, .12);
+            border: 1px solid rgba(255, 59, 92, .3);
+            border-radius: var(--radius-sm);
+            padding: 12px 18px;
+            color: var(--red);
+            font-size: 12px;
+            font-weight: 600;
+            margin: 12px 16px;
+            display: none;
+        }
+
+        /* Q-table */
+        .qtable-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .qtable-label {
+            font-size: 11px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .qtable-label.atk {
+            color: var(--red);
+        }
+
+        .qtable-label.def {
+            color: var(--green);
+        }
+
+        .qtable-hint {
+            font-size: 10px;
+            color: var(--muted);
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        /* matchup table */
+        #matchup-matrix-container table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        #matchup-matrix-container th,
+        #matchup-matrix-container td {
+            padding: 8px 10px;
+        }
+
+        #matchup-matrix-container th {
+            color: var(--muted);
+            font-size: 10px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* history table */
+        #history-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+
+        #history-table th {
+            padding: 8px;
+            text-align: left;
+            color: var(--muted);
+            border-bottom: 1px solid var(--border);
+            font-size: 10px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        #history-table td {
+            padding: 7px 8px;
+        }
+
+        .export-btn {
+            padding: 5px 14px;
+            background: var(--bg-card2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            font-size: 11px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: border-color .2s;
+        }
+
+        .export-btn:hover {
+            border-color: var(--blue);
+        }
+
+        /* Scrollbars */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, .1);
+            border-radius: 10px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 1200px) {
+            .page {
+                grid-template-columns: 260px 1fr;
+            }
+
+            .col-right {
+                display: none;
+            }
+        }
+
+        @media (max-width: 800px) {
+            .page {
+                grid-template-columns: 1fr;
+            }
+
+            .col-left {
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- TOP NAV -->
+    <header class="topbar">
+        <div class="topbar-brand">
+            <div class="brand-icon">🛡</div>
+            <div>
+                <div class="brand-name">AdverShield</div>
+                <div class="brand-sub">Adversarial ML Battle System</div>
+            </div>
+        </div>
+        <div class="topbar-right">
+            <div class="status-pill">
+                <div class="status-dot"></div>System Status: Online
+            </div>
+            <div class="avatar">JD</div>
+        </div>
+    </header>
+
+    <div id="apiWarning" class="api-warning">⚠️ GROQ_API_KEY not set. LLM features disabled.</div>
+
+    <div class="page">
+
+        <!-- ══════════════ LEFT COLUMN ══════════════ -->
+        <aside class="col col-left">
+
+            <!-- SELECT TARGET -->
+            <div class="card">
+                <div class="card-head">
+                    <div>
+                        <div class="target-num">1. SELECT TARGET</div>
+                    </div>
+                    <div class="target-ready" id="targetReadyBadge" style="display:none;">✓ Ready</div>
+                </div>
+                <div class="card-body">
+                    <div class="image-preview-wrap">
+                        <img id="imagePreview" src="" alt="Preview" />
+                        <div class="img-placeholder" id="noPreviewText">
+                            <span>🖼</span>
+                            No image selected
+                        </div>
+                    </div>
+                    <div class="img-btn-row">
+                        <button class="img-btn" onclick="pickRandomImage()">🎲 Random</button>
+                        <label class="img-btn" style="cursor:pointer;">
+                            📤 Upload
+                            <input type="file" id="imageUploadInput" accept="image/*" style="display:none;"
+                                onchange="uploadImage(this)">
+                        </label>
+                    </div>
+                    <div id="uploadStatus" style="font-size:11px; color:var(--muted); margin-bottom:8px;"></div>
+                    <div class="target-class-row" id="imageClassPreview" style="display:none;">
+                        <span class="target-class-label">Target: <span id="predictedClass"
+                                style="color:var(--text);font-weight:600;"></span></span>
+                        <span class="target-class-val" id="predictedConf"></span>
+                    </div>
+                    <div id="selectedImageName"
+                        style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center;"></div>
+                </div>
+            </div>
+
+            <!-- BATTLE ARENA -->
+            <div class="card">
+                <div class="card-head">
+                    <div class="target-num">2. BATTLE ARENA</div>
+                </div>
+                <div class="card-body">
+                    <div class="arena-section-label label-red">Attack Vector</div>
+                    <select id="battleAttackType" class="sel">
+                        <option value="fgsm">FGSM (Fast Gradient Sign)</option>
+                        <option value="pgd">PGD</option>
+                        <option value="cw">Carlini-Wagner</option>
+                        <option value="ai">AI Generated (LLM)</option>
+                    </select>
+                    <select id="battleAttackStrength" class="sel">
+                        <option value="low">Low Strength</option>
+                        <option value="medium" selected>Medium Strength</option>
+                        <option value="high">High Strength</option>
+                    </select>
+
+                    <div class="arena-section-label label-green" style="margin-top:4px;">Defense Protocol</div>
+                    <select id="battleDefenseType" class="sel">
+                        <option value="gaussian_blur">Gaussian Blur</option>
+                        <option value="jpeg_compression">JPEG Compression</option>
+                        <option value="feature_squeezing">Feature Squeezing</option>
+                        <option value="ai_defense">AI Defender (LLM Agent)</option>
+                    </select>
+                    <select id="battleDefenseStrength" class="sel">
+                        <option value="low">Low Resilience</option>
+                        <option value="medium" selected>Medium Resilience</option>
+                        <option value="high">High Resilience</option>
+                    </select>
+
+                    <button id="battleBtn" class="run-btn" onclick="runBattle()">
+                        ⚡ RUN BATTLE SIMULATION
+                    </button>
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- ══════════════ CENTER COLUMN ══════════════ -->
+        <main class="col col-center" style="padding:20px 20px;">
+
+            <!-- BATTLE RESULTS -->
+            <div class="card" style="margin-bottom:16px;">
+                <div class="card-head">
+                    <span class="card-title">Battle Results Heatmaps</span>
+                    <div style="display:flex;gap:8px;" id="battleStatusBadges">
+                        <span class="badge badge-red" id="atkBadge" style="display:none;">Attack Failed</span>
+                        <span class="badge badge-green" id="defBadge" style="display:none;">Defense Success</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- LOADING -->
+                    <div class="spinner-wrap" id="battleLoading">
+                        <div class="spinner"></div>
+                        <p style="color:var(--muted);font-size:12px;">Running battle simulation...</p>
+                    </div>
+
+                    <!-- RESULTS (hidden until battle) -->
+                    <div id="battleResult" class="hidden">
+                        <!-- Heatmaps -->
+                        <div class="heatmap-grid">
+                            <div class="heatmap-item">
+                                <img id="btlOverlayOrig" src="" alt="Original" />
+                                <div class="heatmap-label">Original State</div>
+                                <div class="heatmap-conf" id="btlConfOrig" style="color:var(--text);">—</div>
+                            </div>
+                            <div class="heatmap-item">
+                                <img id="btlOverlayAdv" src="" alt="Adversarial" />
+                                <div class="heatmap-label" style="color:var(--red);">Under Attack</div>
+                                <div class="heatmap-conf" id="btlConfAdv" style="color:var(--red);">—</div>
+                            </div>
+                            <div class="heatmap-item">
+                                <img id="btlOverlayDef" src="" alt="Defended" />
+                                <div class="heatmap-label" style="color:var(--green);">Defended State</div>
+                                <div class="heatmap-conf" id="btlConfDef" style="color:var(--green);">—</div>
+                            </div>
+                        </div>
+
+                        <!-- Metric tiles -->
+                        <div class="metrics-grid">
+                            <div class="metric-box">
+                                <div class="metric-key">Class Stability</div>
+                                <div class="metric-val" id="btlClassStability">—</div>
+                            </div>
+                            <div class="metric-box">
+                                <div class="metric-key">Perturbation</div>
+                                <div class="metric-val down" id="btlPerturbation">—</div>
+                            </div>
+                            <div class="metric-box">
+                                <div class="metric-key">Defense Gain</div>
+                                <div class="metric-val up" id="btlDefenseGain">—</div>
+                            </div>
+                        </div>
+
+                        <!-- Attacker / Defender logic -->
+                        <div class="logic-grid">
+                            <div class="logic-box atk">
+                                <div class="logic-box-head">
+                                    <div class="logic-icon atk">⚔</div>
+                                    Attacker Logic
+                                </div>
+                                <div class="logic-text" id="btlAttackerReason">—</div>
+                            </div>
+                            <div class="logic-box def">
+                                <div class="logic-box-head">
+                                    <div class="logic-icon def">🛡</div>
+                                    Defender Strategy
+                                </div>
+                                <div class="logic-text" id="btlDefenderReason">—</div>
+                            </div>
+                        </div>
+
+                        <!-- Full strategy ops -->
+                        <details style="margin-bottom:12px;">
+                            <summary
+                                style="cursor:pointer;font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;padding:8px 0;">
+                                Full Strategy Details
+                            </summary>
+                            <div style="margin-top:10px;">
+                                <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Attacker Strategy
+                                </div>
+                                <div id="btlAttackerStrategyBox" class="strategy-box"></div>
+                                <div style="font-size:11px;color:var(--muted);margin:12px 0 4px;">Defender Strategy
+                                </div>
+                                <div id="btlDefenderStrategyBox" class="strategy-box"></div>
+                            </div>
+                        </details>
+
+                        <!-- GradCAM -->
+                        <div class="gradcam-box">
+                            <div class="gradcam-label">GradCAM Interpretability</div>
+                            <div class="gradcam-text" id="gradcam-analysis">Run a battle to see GradCAM analysis…</div>
+                        </div>
+                    </div>
+
+                    <!-- Empty state -->
+                    <div id="emptyState" style="text-align:center;padding:40px 20px;">
+                        <div style="font-size:48px;margin-bottom:16px;">⚔️</div>
+                        <div style="color:var(--muted);font-size:14px;">Select a target image and run a battle to see
+                            results.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI ANALYSIS PANEL -->
+            <div class="card" id="ai-analysis-panel" style="display:none;">
+                <div class="card-head">
+                    <span class="card-title" style="color:var(--purple);">🤖 AI Battle Analysis</span>
+                    <span class="badge badge-purple">Llama 70B</span>
+                </div>
+                <div class="card-body">
+                    <div class="analysis-grid">
+                        <div class="analysis-cell attack-why">
+                            <div class="analysis-cell-title">⚔ Why Attacker Chose This Strategy</div>
+                            <div class="analysis-cell-text" id="attack-reasoning">Run a battle to see...</div>
+                        </div>
+                        <div class="analysis-cell defend-why">
+                            <div class="analysis-cell-title">🛡 Why Defender Chose This Strategy</div>
+                            <div class="analysis-cell-text" id="defense-reasoning">Run a battle to see...</div>
+                        </div>
+                        <div class="analysis-cell atk-out">
+                            <div class="analysis-cell-title">⚡ Why Attack Succeeded / Failed</div>
+                            <div class="analysis-cell-text" id="attack-outcome-reason">—</div>
+                        </div>
+                        <div class="analysis-cell def-out">
+                            <div class="analysis-cell-title">🔬 Why Defense Succeeded / Failed</div>
+                            <div class="analysis-cell-text" id="defense-outcome-reason">—</div>
+                        </div>
+                    </div>
+                    <div class="key-insight" id="keyInsightWrap" style="display:none;">
+                        <div class="key-insight-icon">⚡</div>
+                        <div class="key-insight-text" id="key-insight">—</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RL AGENT LOG — full width in center for more chart space -->
+            <div class="card">
+                <div class="card-head">
+                    <span class="card-title">🧠 RL Agent Log</span>
+                    <span class="badge badge-blue" id="epsilon-badge">ε = 0.100</span>
+                </div>
+                <!-- 4-stat row + log side by side on wide screen -->
+                <div style="display:grid;grid-template-columns:220px 1fr;gap:0;border-bottom:1px solid var(--border);">
+                    <div style="border-right:1px solid var(--border);">
+                        <div class="rl-stats" style="grid-template-columns:1fr 1fr;">
+                            <div class="rl-stat">
+                                <div class="rl-stat-val" id="rl-total-rounds" style="color:#fff;">0</div>
+                                <div class="rl-stat-label">Total Rounds</div>
+                            </div>
+                            <div class="rl-stat">
+                                <div class="rl-stat-val" id="rl-avg-reward" style="color:var(--gold);">0.00</div>
+                                <div class="rl-stat-label">Avg Reward</div>
+                            </div>
+                            <div class="rl-stat">
+                                <div class="rl-stat-val" id="rl-epsilon" style="color:var(--purple);">0.10</div>
+                                <div class="rl-stat-label">Exploration ε</div>
+                            </div>
+                            <div class="rl-stat">
+                                <div class="rl-stat-val" id="rl-states" style="color:var(--blue);">0</div>
+                                <div class="rl-stat-label">Q-Table States</div>
+                            </div>
+                        </div>
+                        <div style="padding:0 14px 14px;">
+                            <details style="font-size:12px;color:var(--muted);cursor:pointer;">
+                                <summary
+                                    style="color:var(--blue);font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;padding:6px 0;">
+                                    📘 How RL agent learns?</summary>
+                                <div
+                                    style="margin-top:8px;line-height:1.8;background:rgba(79,142,247,.06);border:1px solid rgba(79,142,247,.15);border-radius:var(--radius-sm);padding:12px;">
+                                    <p>🔹 <strong>State:</strong> e.g. <code style="color:var(--blue)">dog_high</code>
+                                    </p>
+                                    <p>🔹 <strong>Action:</strong> combo like <code
+                                            style="color:var(--blue)">fgsm_medium</code></p>
+                                    <p>🔹 <strong>Reward:</strong> <span style="color:var(--green)">+1.0</span> / <span
+                                            style="color:var(--red)">-0.5</span></p>
+                                    <p>🔹 <strong>ε:</strong> decays 0.10 → 0.01</p>
+                                    <p>🔹 <code
+                                            style="color:var(--purple);font-size:11px;">new_Q = old_Q + 0.1×(r–old_Q)</code>
+                                    </p>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+                    <div class="log-entries" id="learning-log-entries"
+                        style="margin:0;border-radius:0;border:none;max-height:200px;">
+                        <div style="color:var(--muted);">Learning events will appear here...</div>
+                    </div>
+                </div>
+                <div style="padding:16px 18px;">
+                    <canvas id="learning-curve-chart" height="90"></canvas>
+                </div>
+            </div>
+
+            <!-- AI COACH -->
+            <div class="card">
+                <div class="card-head"><span class="card-title">🎓 AI Coach</span></div>
+                <div class="coach-body">
+                    <button class="run-btn" style="background:linear-gradient(135deg,var(--green),var(--blue));"
+                        onclick="getCoach()">
+                        🎓 AI Coach Advice
+                    </button>
+                    <div class="coach-msg" id="coachMessage">
+                        <div class="coach-msg-title">Coach Says:</div>
+                        <div id="coachText"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BATTLE HISTORY (in center) -->
+            <div class="card">
+                <div class="card-head">
+                    <span class="card-title">🗡 Battle History</span>
+                </div>
+                <div class="battle-list" id="battleHistory">
+                    <p style="color:var(--muted);text-align:center;padding:20px;font-size:12px;">No battles yet</p>
+                </div>
+            </div>
+
+            <!-- CHARTS PANEL — now wide, great for graphs -->
+            <div class="card">
+                <div class="chart-tabs">
+                    <button class="chart-tab active" data-tab="learning">📈 Learning Curve</button>
+                    <button class="chart-tab" data-tab="qtable">🧠 Q-Table</button>
+                    <button class="chart-tab" data-tab="matchup">⚔ Matchup Matrix</button>
+                    <button class="chart-tab" data-tab="history">📋 Round History</button>
+                </div>
+
+                <div class="chart-pane active" id="tab-learning">
+                    <canvas id="win-rate-chart" height="140"></canvas>
+                    <div class="mini-stats-row">
+                        <div class="mini-stat">
+                            <div class="mini-stat-val" id="atk-peak" style="color:var(--red);">—</div>
+                            <div class="mini-stat-label">Attacker Peak</div>
+                        </div>
+                        <div class="mini-stat">
+                            <div class="mini-stat-val" id="def-peak" style="color:var(--green);">—</div>
+                            <div class="mini-stat-label">Defender Peak</div>
+                        </div>
+                        <div class="mini-stat">
+                            <div class="mini-stat-val" id="total-rounds-stat">—</div>
+                            <div class="mini-stat-label">Total Rounds</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-pane" id="tab-qtable">
+                    <div class="qtable-grid" style="grid-template-columns:1fr 1fr;gap:24px;">
+                        <div>
+                            <div class="qtable-label atk">⚔ Attacker Q-Values</div>
+                            <canvas id="attacker-qtable-canvas" width="400" height="260"></canvas>
+                        </div>
+                        <div>
+                            <div class="qtable-label def">🛡 Defender Q-Values</div>
+                            <canvas id="defender-qtable-canvas" width="400" height="260"></canvas>
+                        </div>
+                    </div>
+                    <div class="qtable-hint">Blue = AVOID | Red/Green = PREFER | Grey = unexplored</div>
+                </div>
+
+                <div class="chart-pane" id="tab-matchup">
+                    <div style="font-weight:700;color:#fff;font-size:13px;margin-bottom:12px;">Attack vs Defense
+                        Effectiveness Matrix</div>
+                    <div id="matchup-matrix-container"></div>
+                </div>
+
+                <div class="chart-pane" id="tab-history">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                        <span style="font-weight:700;color:#fff;font-size:13px;">Round History</span>
+                        <button class="export-btn" onclick="exportHistoryCSV()">Export CSV</button>
+                    </div>
+                    <div style="overflow-x:auto;">
+                        <table id="history-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Image</th>
+                                    <th>Attack</th>
+                                    <th>Str</th>
+                                    <th>Defense</th>
+                                    <th>Str</th>
+                                    <th>Result</th>
+                                    <th>Conf Before</th>
+                                    <th>After Atk</th>
+                                    <th>After Def</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- ══════════════ RIGHT COLUMN — Battle Stats only ══════════════ -->
+        <aside class="col col-right">
+
+            <!-- BATTLE STATS -->
+            <div class="card">
+                <div class="card-head"><span class="card-title">Battle Stats</span></div>
+                <div class="card-body" style="padding-top:12px;">
+                    <div class="stat-pair">
+                        <div class="stat-tile">
+                            <div class="stat-tile-val wins" id="defenderWins">0</div>
+                            <div class="stat-tile-label">Wins</div>
+                        </div>
+                        <div class="stat-tile">
+                            <div class="stat-tile-val losses" id="attackerWins">0</div>
+                            <div class="stat-tile-label">Losses</div>
+                        </div>
+                    </div>
+                    <div class="donut-wrap">
+                        <canvas id="battleChart"></canvas>
+                    </div>
+                    <div style="text-align:center;font-size:11px;color:var(--muted);padding-top:6px;">
+                        Total Battles: <span id="totalBattles" style="color:var(--text);font-weight:600;">0</span>
+                    </div>
+                </div>
+            </div>
+
+        </aside>
+    </div>
+
+    <script>
+        const API_BASE = '';
+        let battleChart = null;
+        let winRateChart = null;
+        let learningCurveChart = null;
+        let sharedImage = null;
+        let battleRoundNum = 0;
+        let atkWins = 0, defWins = 0;
+        let atkWinRates = [], defWinRates = [], roundLabels = [];
+
+        const chartColors = {
+            gridColor: 'rgba(255,255,255,0.04)',
+            tickColor: '#8892a4',
+        };
+
+        async function init() {
+            loadConfig();
+            checkAPIKey();
+            setInterval(updateStats, 5000);
+            initCharts();
+            fetchLearningLog();
+
+            document.querySelectorAll('.chart-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.chart-tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.chart-pane').forEach(c => c.classList.remove('active'));
+                    tab.classList.add('active');
+                    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+                    if (tab.dataset.tab === 'qtable') renderQTableHeatmaps();
+                    if (tab.dataset.tab === 'matchup') fetchAndRenderMatchup();
+                    if (tab.dataset.tab === 'history') fetchAndRenderHistory();
+                });
+            });
+        }
+
+        function initCharts() {
+            const baseOpts = {
+                responsive: true,
+                plugins: { legend: { labels: { color: chartColors.tickColor, font: { size: 11 } } } },
+                scales: {
+                    x: { ticks: { color: chartColors.tickColor, font: { size: 10 } }, grid: { color: chartColors.gridColor } },
+                    y: { ticks: { color: chartColors.tickColor, font: { size: 10 } }, grid: { color: chartColors.gridColor } }
+                }
+            };
+
+            winRateChart = new Chart(document.getElementById('win-rate-chart'), {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        { label: 'Attacker Win %', borderColor: '#ff3b5c', backgroundColor: 'rgba(255,59,92,0.08)', fill: true, tension: 0.4, data: [], pointRadius: 3 },
+                        { label: 'Defender Win %', borderColor: '#00e5a0', backgroundColor: 'rgba(0,229,160,0.08)', fill: true, tension: 0.4, data: [], pointRadius: 3 }
+                    ]
+                },
+                options: { ...baseOpts, scales: { ...baseOpts.scales, y: { ...baseOpts.scales.y, min: 0, max: 100 } } }
+            });
+
+            learningCurveChart = new Chart(document.getElementById('learning-curve-chart'), {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        { label: 'Reward', borderColor: '#f5c518', backgroundColor: 'rgba(245,197,24,0.08)', fill: true, tension: 0.4, data: [], pointRadius: 2 },
+                        { label: 'Q-Value', borderColor: '#8b5cf6', backgroundColor: 'rgba(139,92,246,0.08)', fill: true, tension: 0.4, data: [], pointRadius: 2 }
+                    ]
+                },
+                options: { ...baseOpts, plugins: { ...baseOpts.plugins, title: { display: true, text: 'RL Learning Progress', color: '#fff', font: { size: 11 } } } }
+            });
+        }
+
+        async function checkAPIKey() {
+            try {
+                const res = await fetch(`${API_BASE}/api/config`);
+                const data = await res.json();
+                const warn = document.getElementById('apiWarning');
+                if (!data.llm_available) warn.style.display = 'block';
+            } catch (e) { document.getElementById('apiWarning').style.display = 'block'; }
+        }
+
+        async function pickRandomImage() {
+            const res = await fetch(`${API_BASE}/api/random-image`);
+            const data = await res.json();
+            if (data.error) return alert(data.error);
+            setSharedImage(data.filename);
+        }
+
+        async function uploadImage(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const formData = new FormData();
+            formData.append('file', file);
+            document.getElementById('uploadStatus').textContent = 'Uploading…';
+            const res = await fetch(`${API_BASE}/api/upload-image`, { method: 'POST', body: formData });
+            const data = await res.json();
+            if (data.error) { alert(data.error); document.getElementById('uploadStatus').textContent = ''; return; }
+            setSharedImage(data.filename);
+            document.getElementById('uploadStatus').textContent = '✓ Upload successful';
+            setTimeout(() => document.getElementById('uploadStatus').textContent = '', 3000);
+            input.value = '';
+        }
+
+        async function setSharedImage(filename) {
+            sharedImage = filename;
+            document.getElementById('selectedImageName').textContent = filename;
+            const preview = document.getElementById('imagePreview');
+            preview.src = `${API_BASE}/samples/${filename}`;
+            preview.style.display = 'block';
+            document.getElementById('noPreviewText').style.display = 'none';
+            document.getElementById('targetReadyBadge').style.display = 'flex';
+
+            try {
+                const res = await fetch(`${API_BASE}/api/classify`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: filename })
+                });
+                const cls = await res.json();
+                if (cls.original_class) {
+                    document.getElementById('predictedClass').textContent = cls.original_class;
+                    document.getElementById('predictedConf').textContent = (cls.confidence * 100).toFixed(1) + '%';
+                    document.getElementById('imageClassPreview').style.display = 'flex';
+                }
+            } catch (e) { }
+        }
+
+        async function loadConfig() {
+            try {
+                const res = await fetch(`${API_BASE}/api/config`);
+                const data = await res.json();
+                updateSelectOptions('battleAttackType', data.attack_types);
+                updateSelectOptions('battleDefenseType', data.defense_types);
+            } catch (e) { }
+        }
+
+        function updateSelectOptions(id, options) {
+            if (!options) return;
+            const select = document.getElementById(id);
+            select.innerHTML = '';
+            options.forEach(opt => {
+                let label = opt.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                if (opt === 'ai') label = 'AI Generated (LLM)';
+                if (opt === 'ai_defense') label = 'AI Defender (LLM Agent)';
+                select.add(new Option(label, opt));
+            });
+        }
+
+        function formatStrategy(s) {
+            if (!s) return 'No strategy data';
+            let html = '';
+            if (s.reasoning) html += `<div class="strategy-reason"><strong>Reasoning:</strong> ${s.reasoning}</div>`;
+            if (s.strategy) html += `<div class="strategy-reason"><strong>Strategy:</strong> ${s.strategy}</div>`;
+            if (s.operations && Array.isArray(s.operations)) {
+                html += '<ul class="ops-list">';
+                s.operations.forEach(op => {
+                    const p = op.params ? JSON.stringify(op.params).replace(/[{}]/g, '') : '';
+                    html += `<li>${op.type}${p ? ' (' + p + ')' : ''}</li>`;
+                });
+                html += '</ul>';
+            }
+            return html || JSON.stringify(s);
+        }
+
+        function parseStrategy(raw) {
+            if (typeof raw === 'string') { try { return JSON.parse(raw); } catch (e) { return { raw }; } }
+            return raw || {};
+        }
+
+        async function runBattle() {
+            if (!sharedImage) { alert('Please select an image first!'); return; }
+
+            const attackType = document.getElementById('battleAttackType').value;
+            const attackStrength = document.getElementById('battleAttackStrength').value;
+            const defenseType = document.getElementById('battleDefenseType').value;
+            const defenseStrength = document.getElementById('battleDefenseStrength').value;
+
+            document.getElementById('battleLoading').style.display = 'block';
+            document.getElementById('battleBtn').disabled = true;
+            document.getElementById('battleResult').classList.add('hidden');
+            document.getElementById('emptyState').style.display = 'none';
+
+            try {
+                const atkRes = await fetch(`${API_BASE}/api/attack`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: sharedImage, attack_type: attackType, strength: attackStrength })
+                });
+                const atkData = await atkRes.json();
+                if (atkData.error) throw new Error(atkData.error);
+
+                const defRes = await fetch(`${API_BASE}/api/defend`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        image: sharedImage,
+                        attack_type: attackType, attack_strength: attackStrength,
+                        defense_type: defenseType, defense_strength: defenseStrength
+                    })
+                });
+                const defData = await defRes.json();
+                if (defData.error) throw new Error(defData.error);
+
+                // Confidence values
+                const origConf = (atkData.original_confidence * 100).toFixed(1) + '%';
+                const advConf = (atkData.adversarial_confidence * 100).toFixed(1) + '%';
+                const defConf = (defData.defended_confidence * 100).toFixed(1) + '%';
+
+                document.getElementById('btlConfOrig').textContent = origConf + ' Confidence';
+                document.getElementById('btlConfAdv').textContent = advConf + ' Confidence';
+                document.getElementById('btlConfDef').textContent = defConf + ' Confidence';
+
+                // Metric tiles
+                const sameClass = atkData.original_class === atkData.adversarial_class;
+                document.getElementById('btlClassStability').textContent = sameClass ? 'STABLE' : 'CHANGED';
+                document.getElementById('btlClassStability').style.color = sameClass ? 'var(--green)' : 'var(--red)';
+
+                const pertDelta = Math.abs(atkData.original_confidence - atkData.adversarial_confidence) * 100;
+                document.getElementById('btlPerturbation').textContent = pertDelta.toFixed(1) + '%';
+
+                const defGain = (defData.defended_confidence - atkData.adversarial_confidence) * 100;
+                document.getElementById('btlDefenseGain').textContent = (defGain >= 0 ? '+' : '') + defGain.toFixed(1) + '%';
+                document.getElementById('btlDefenseGain').style.color = defGain >= 0 ? 'var(--green)' : 'var(--red)';
+
+                // Status badges
+                const atkBadge = document.getElementById('atkBadge');
+                const defBadge = document.getElementById('defBadge');
+                atkBadge.style.display = 'inline-flex';
+                defBadge.style.display = 'inline-flex';
+                if (atkData.attack_success) {
+                    atkBadge.textContent = 'Attack Success'; atkBadge.className = 'badge badge-red';
+                } else {
+                    atkBadge.textContent = 'Attack Failed'; atkBadge.className = 'badge badge-green';
+                }
+                if (defData.defense_success) {
+                    defBadge.textContent = 'Defense Success'; defBadge.className = 'badge badge-green';
+                } else {
+                    defBadge.textContent = 'Defense Failed'; defBadge.className = 'badge badge-red';
+                }
+
+                // Heatmap images
+                if (atkData.overlay_original) document.getElementById('btlOverlayOrig').src = `${API_BASE}/static/heatmaps/${atkData.overlay_original}`;
+                if (atkData.overlay_adversarial) document.getElementById('btlOverlayAdv').src = `${API_BASE}/static/heatmaps/${atkData.overlay_adversarial}`;
+                if (defData.overlay_defended) document.getElementById('btlOverlayDef').src = `${API_BASE}/static/heatmaps/${defData.overlay_defended}`;
+
+                // Logic text
+                const atkStrat = parseStrategy(atkData.llm_strategy);
+                const defStrat = parseStrategy(defData.defense_llm_strategy || defData.llm_strategy);
+                document.getElementById('btlAttackerReason').textContent = atkStrat.reasoning || 'No attacker reasoning available.';
+                document.getElementById('btlDefenderReason').textContent = defStrat.reasoning || 'No defender reasoning available.';
+                document.getElementById('btlAttackerStrategyBox').innerHTML = formatStrategy(atkStrat);
+                document.getElementById('btlDefenderStrategyBox').innerHTML = formatStrategy(defStrat);
+
+                document.getElementById('battleResult').classList.remove('hidden');
+
+                // Win rates
+                battleRoundNum++;
+                const attackerWon = atkData.original_class !== atkData.adversarial_class;
+                if (attackerWon) atkWins++; else defWins++;
+                roundLabels.push(battleRoundNum);
+                atkWinRates.push(Math.round((atkWins / battleRoundNum) * 100));
+                defWinRates.push(Math.round((defWins / battleRoundNum) * 100));
+                if (winRateChart) {
+                    winRateChart.data.labels = roundLabels;
+                    winRateChart.data.datasets[0].data = atkWinRates;
+                    winRateChart.data.datasets[1].data = defWinRates;
+                    winRateChart.update();
+                    document.getElementById('atk-peak').textContent = Math.max(...atkWinRates) + '%';
+                    document.getElementById('def-peak').textContent = Math.max(...defWinRates) + '%';
+                    document.getElementById('total-rounds-stat').textContent = battleRoundNum;
+                }
+
+                showAIAnalysis(atkData, defData);
+                fetchLearningLog();
+                updateStats();
+                updateHistory();
+            } catch (e) {
+                alert('Battle failed: ' + e.message);
+                document.getElementById('emptyState').style.display = 'block';
+            } finally {
+                document.getElementById('battleLoading').style.display = 'none';
+                document.getElementById('battleBtn').disabled = false;
+            }
+        }
+
+        function showAIAnalysis(atkData, defData) {
+            document.getElementById('ai-analysis-panel').style.display = 'block';
+            const atkReason = (parseStrategy(atkData.llm_strategy).reasoning) || 'No attacker reasoning';
+            document.getElementById('attack-reasoning').textContent = atkReason;
+            const defStrat = defData.defense_llm_strategy || defData.llm_strategy;
+            const defReason = (parseStrategy(defStrat).reasoning) || 'No defender reasoning';
+            document.getElementById('defense-reasoning').textContent = defReason;
+
+            const analysis = defData.outcome_analysis;
+            if (analysis) {
+                document.getElementById('attack-outcome-reason').textContent = analysis.why_attack_succeeded_or_failed || '—';
+                document.getElementById('defense-outcome-reason').textContent = analysis.why_defense_succeeded_or_failed || '—';
+                document.getElementById('gradcam-analysis').textContent = analysis.what_model_focused_on || 'No GradCAM data';
+                if (analysis.key_insight) {
+                    document.getElementById('key-insight').textContent = analysis.key_insight;
+                    document.getElementById('keyInsightWrap').style.display = 'flex';
+                }
+                if (analysis.learning_note) addLearningLogEntry('🤖 ' + analysis.learning_note, '#8b5cf6');
+            }
+        }
+
+        function fetchLearningLog() {
+            fetch('/api/learning-log')
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('rl-total-rounds').textContent = data.total_rounds || 0;
+                    document.getElementById('rl-epsilon').textContent = (data.epsilon || 0).toFixed(3);
+                    document.getElementById('epsilon-badge').textContent = 'ε = ' + (data.epsilon || 0).toFixed(3);
+                    document.getElementById('rl-states').textContent = (data.q_heatmap?.attacker || []).length;
+                    const log = data.log || [];
+                    if (log.length > 0)
+                        document.getElementById('rl-avg-reward').textContent = (log.reduce((s, e) => s + e.reward, 0) / log.length).toFixed(2);
+
+                    const container = document.getElementById('learning-log-entries');
+                    const recent = log.slice(-20).reverse();
+                    container.innerHTML = recent.map(e =>
+                        `<div class="log-entry ${e.reward > 0 ? 'pos' : 'neg'}">[Round ${e.round}] ${e.message}</div>`
+                    ).join('') || '<div style="color:var(--muted)">No learning events yet</div>';
+
+                    if (learningCurveChart && data.curve) {
+                        learningCurveChart.data.labels = data.curve.rounds;
+                        learningCurveChart.data.datasets[0].data = data.curve.rewards;
+                        learningCurveChart.data.datasets[1].data = data.curve.q_values;
+                        learningCurveChart.update();
+                    }
+                }).catch(() => { });
+        }
+
+        function addLearningLogEntry(message, color) {
+            const container = document.getElementById('learning-log-entries');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.style.color = color || 'var(--muted)';
+            entry.textContent = message;
+            container.insertBefore(entry, container.firstChild);
+        }
+
+        function renderQTableHeatmaps() {
+            fetch('/api/learning-log')
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.q_heatmap) return;
+                    drawQHeatmap('attacker-qtable-canvas', data.q_heatmap.attacker, data.q_heatmap.attack_labels, '#ff3b5c');
+                    drawQHeatmap('defender-qtable-canvas', data.q_heatmap.defender, data.q_heatmap.defense_labels, '#00e5a0');
+                }).catch(() => { });
+        }
+
+        function drawQHeatmap(canvasId, matrix, labels, accentColor) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas || !matrix || matrix.length === 0) return;
+            const ctx = canvas.getContext('2d');
+            const cellW = canvas.width / labels.length;
+            const cellH = (canvas.height - 30) / matrix.length;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let minV = Infinity, maxV = -Infinity;
+            matrix.forEach(row => row.values.forEach(v => { minV = Math.min(minV, v); maxV = Math.max(maxV, v); }));
+            if (minV === maxV) { minV -= 0.1; maxV += 0.1; }
+            matrix.forEach((row, ri) => {
+                row.values.forEach((val, ci) => {
+                    const norm = (val - minV) / (maxV - minV);
+                    let r, g, b;
+                    if (norm < 0.5) {
+                        r = Math.round(26 + norm * 2 * (50 - 26));
+                        g = Math.round(35 + norm * 2 * (50 - 35));
+                        b = 126;
+                    } else {
+                        const t = (norm - 0.5) * 2;
+                        const tgt = accentColor === '#ff3b5c' ? [255, 59, 92] : [0, 229, 160];
+                        r = Math.round(50 + t * (tgt[0] - 50));
+                        g = Math.round(50 + t * (tgt[1] - 50));
+                        b = Math.round(50 + t * (tgt[2] - 50));
+                    }
+                    ctx.fillStyle = `rgb(${r},${g},${b})`;
+                    ctx.fillRect(ci * cellW + 1, ri * cellH + 30 + 1, cellW - 2, cellH - 2);
+                });
+            });
+            ctx.fillStyle = '#8892a4';
+            ctx.font = '8px monospace';
+            labels.forEach((lbl, i) => {
+                ctx.save();
+                ctx.translate(i * cellW + cellW / 2, 22);
+                ctx.rotate(-Math.PI / 4);
+                ctx.fillText(lbl.replace(/_/g, '-'), 0, 0);
+                ctx.restore();
+            });
+        }
+
+        function fetchAndRenderMatchup() {
+            fetch('/api/matchup-matrix')
+                .then(r => r.json())
+                .then(matrix => {
+                    const attacks = ['fgsm', 'pgd', 'cw', 'ai'];
+                    const defenses = ['gaussian_blur', 'jpeg_compression', 'feature_squeezing', 'ai_defense'];
+                    let html = '<table style="width:100%;border-collapse:collapse;font-size:11px;">';
+                    html += '<tr><th style="padding:8px;color:var(--muted);text-align:left;">Attack ↓ / Defense →</th>';
+                    defenses.forEach(d => { html += `<th style="padding:8px;color:var(--muted)">${d === 'ai_defense' ? 'AI Def' : d.replace(/_/g, ' ')}</th>`; });
+                    html += '</tr>';
+                    attacks.forEach(atk => {
+                        html += `<tr><td style="padding:8px;color:#fff;font-weight:700;font-family:'Space Mono',monospace;">${atk.toUpperCase()}</td>`;
+                        defenses.forEach(def => {
+                            const cell = matrix[atk]?.[def];
+                            if (!cell || cell.n === 0) {
+                                html += '<td style="padding:8px;text-align:center;color:var(--muted)">—</td>';
+                            } else {
+                                const rate = cell.attacker_win_rate;
+                                const bg = rate > 0.6 ? 'rgba(255,59,92,.2)' : rate < 0.4 ? 'rgba(0,229,160,.2)' : 'rgba(255,255,255,.04)';
+                                const color = rate > 0.6 ? 'var(--red)' : rate < 0.4 ? 'var(--green)' : '#fff';
+                                html += `<td style="padding:8px;text-align:center;background:${bg};color:${color};border-radius:4px;">
+                <div style="font-family:'Space Mono',monospace;font-size:14px;font-weight:800">${Math.round(rate * 100)}%</div>
+                <div style="font-size:9px;color:var(--muted)">n=${cell.n}</div>
+              </td>`;
+                            }
+                        });
+                        html += '</tr>';
+                    });
+                    html += '</table>';
+                    document.getElementById('matchup-matrix-container').innerHTML = html;
+                }).catch(() => { });
+        }
+
+        function fetchAndRenderHistory() {
+            fetch('/api/battle-history')
+                .then(r => r.json())
+                .then(battles => {
+                    const tbody = document.getElementById('history-tbody');
+                    if (!tbody) return;
+                    tbody.innerHTML = battles.map((b, i) => {
+                        const result = b.is_draw ? 'DRAW' : b.attacker_won ? 'ATK WIN' : 'DEF WIN';
+                        const rc = b.is_draw ? 'var(--gold)' : b.attacker_won ? 'var(--red)' : 'var(--green)';
+                        return `<tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:7px;color:var(--muted)">${i + 1}</td>
+            <td style="padding:7px;color:#fff">${(b.image || '').split('/').pop()}</td>
+            <td style="padding:7px;color:var(--red);font-family:'Space Mono',monospace">${(b.attack_type || '-').toUpperCase()}</td>
+            <td style="padding:7px;color:var(--muted)">${b.attack_strength || b.strength || '-'}</td>
+            <td style="padding:7px;color:var(--green)">${(b.defense_type || '-').replace(/_/g, ' ')}</td>
+            <td style="padding:7px;color:var(--muted)">${b.defense_strength || '-'}</td>
+            <td style="padding:7px"><span style="color:${rc};font-weight:700;font-family:'Space Mono',monospace">${result}</span></td>
+            <td style="padding:7px;color:var(--muted)">${b.original_confidence ? (b.original_confidence * 100).toFixed(1) + '%' : '-'}</td>
+            <td style="padding:7px;color:var(--red)">${b.adversarial_confidence ? (b.adversarial_confidence * 100).toFixed(1) + '%' : '-'}</td>
+            <td style="padding:7px;color:var(--green)">${b.defended_confidence ? (b.defended_confidence * 100).toFixed(1) + '%' : '-'}</td>
+          </tr>`;
+                    }).join('');
+                }).catch(() => { });
+        }
+
+        function exportHistoryCSV() {
+            fetch('/api/battle-history')
+                .then(r => r.json())
+                .then(battles => {
+                    const headers = ['#', 'image', 'attack_type', 'attack_strength', 'defense_type', 'defense_strength', 'result', 'conf_before', 'conf_after_attack', 'conf_after_defense'];
+                    const rows = battles.map((b, i) => [
+                        i + 1, b.image || '', b.attack_type || '', b.attack_strength || b.strength || '',
+                        b.defense_type || '', b.defense_strength || '',
+                        b.is_draw ? 'DRAW' : b.attacker_won ? 'ATK_WIN' : 'DEF_WIN',
+                        b.original_confidence || '', b.adversarial_confidence || '', b.defended_confidence || ''
+                    ]);
+                    const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+                    a.download = 'advershield_history.csv';
+                    a.click();
+                }).catch(() => { });
+        }
+
+        async function updateStats() {
+            try {
+                const res = await fetch(`${API_BASE}/api/stats`);
+                const stats = await res.json();
+                document.getElementById('totalBattles').textContent = stats.total_battles;
+                document.getElementById('attackerWins').textContent = stats.attacker_wins;
+                document.getElementById('defenderWins').textContent = stats.defender_wins;
+                updateChart(stats);
+            } catch (e) { }
+        }
+
+        function updateChart(stats) {
+            const ctx = document.getElementById('battleChart').getContext('2d');
+            if (battleChart) battleChart.destroy();
+            battleChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Attacker Wins', 'Defender Wins'],
+                    datasets: [{ data: [stats.attacker_wins || 0, stats.defender_wins || 0], backgroundColor: ['#ff3b5c', '#00e5a0'], borderWidth: 0, hoverOffset: 4 }]
+                },
+                options: {
+                    responsive: true,
+                    cutout: '72%',
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#8892a4', font: { size: 11 }, padding: 16 } }
+                    }
+                }
+            });
+        }
+
+        async function updateHistory() {
+            try {
+                const res = await fetch(`${API_BASE}/api/battle-history`);
+                const battles = await res.json();
+                const container = document.getElementById('battleHistory');
+                if (battles.length === 0) {
+                    container.innerHTML = '<p style="color:var(--muted);text-align:center;padding:20px;font-size:12px;">No battles yet</p>';
+                    return;
+                }
+                container.innerHTML = battles.slice().reverse().map(b => `
+        <div class="battle-item ${b.attacker_won ? '' : 'def'}">
+          <div class="battle-item-info">${b.image} | ${b.attack_type || 'N/A'} → ${b.defense_type || 'N/A'}</div>
+          <div class="battle-item-result ${b.attacker_won ? 'atk-win' : 'def-win'}">${b.attacker_won ? 'Attacker Won' : 'Defender Won'}</div>
+        </div>
+      `).join('');
+            } catch (e) { }
+        }
+
+        async function getCoach() {
+            try {
+                const res = await fetch(`${API_BASE}/api/coach`);
+                const data = await res.json();
+                const textDiv = document.getElementById('coachText');
+                textDiv.textContent = data.message || data.coaching || 'No advice available.';
+                document.getElementById('coachMessage').classList.add('show');
+            } catch (e) { alert('Failed to get coaching: ' + e.message); }
+        }
+
+        init();
+    </script>
+</body>
+
+</html>
