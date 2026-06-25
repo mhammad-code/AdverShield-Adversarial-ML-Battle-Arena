@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 import cv2
-from PIL import Image, ImageFilter
+from PIL import Image
 import io
 import json
 import re
@@ -11,7 +11,7 @@ from config import JPEG_QUALITY_MAP, BLUR_KERNEL_MAP, SQUEEZE_BITS_MAP
 class DefenseEngine:
     def __init__(self, llm_engine=None):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.llm_engine = llm_engine   # <-- injected from app.py
+        self.llm_engine = llm_engine
 
     def apply_defense(self, image_tensor, defense_type, strength, battle_context=None):
         if defense_type == "gaussian_blur":
@@ -22,9 +22,26 @@ class DefenseEngine:
             return self._feature_squeezing(image_tensor, strength), None
         elif defense_type == "ai_defense" and self.llm_engine is not None:
             return self._llm_defense(image_tensor, strength, battle_context)
+        elif defense_type == "median_blur":
+            return self._median_blur(image_tensor, strength), None
+        elif defense_type == "bilateral_filter":
+            return self._bilateral_filter(image_tensor, strength), None
+        elif defense_type == "tv_denoising":
+            return self._tv_denoising(image_tensor, strength), None
+        elif defense_type == "randomized_smoothing":
+            return self._randomized_smoothing(image_tensor, strength), None
+        elif defense_type == "pixel_deflection":
+            return self._pixel_deflection(image_tensor, strength), None
+        elif defense_type == "quilting":
+            return self._quilting(image_tensor, strength), None
+        elif defense_type == "autoencoder_restoration":
+            return self._autoencoder_restoration(image_tensor, strength), None
+        elif defense_type == "diff_jpeg":
+            return self._diff_jpeg(image_tensor, strength), None
         else:
             return self._gaussian_blur(image_tensor, strength), None
 
+    # Existing defenses
     def _gaussian_blur(self, image_tensor, strength):
         kernel_size = BLUR_KERNEL_MAP.get(strength, 5)
         kernel_size = kernel_size if kernel_size % 2 == 1 else kernel_size + 1
@@ -53,7 +70,7 @@ class DefenseEngine:
         squeezed = torch.floor(image_tensor * levels) / levels
         return squeezed
 
-    # ----- AI Defense (LLM) -----
+    # AI Defense (LLM)
     def _llm_defense(self, image_tensor, strength, battle_context):
         prompt = self._build_llm_defense_prompt(strength, battle_context)
         try:
@@ -165,3 +182,61 @@ Reply ONLY in JSON:
             return json.loads(match.group())
         except:
             return {}
+
+    # ---------- New Defenses ----------
+    def _median_blur(self, image_tensor, strength):
+        k = {"low": 3, "medium": 5, "high": 7}.get(strength, 3)
+        img = image_tensor.cpu().numpy()[0].transpose(1,2,0)
+        img = (img * 255).astype(np.uint8)
+        img = cv2.medianBlur(img, k)
+        return torch.from_numpy(img.astype(np.float32)/255.0).permute(2,0,1).unsqueeze(0).to(self.device)
+
+    def _bilateral_filter(self, image_tensor, strength):
+        d = {"low": 5, "medium": 7, "high": 9}[strength]
+        sigma_color = {"low": 50, "medium": 75, "high": 100}[strength]
+        sigma_space = {"low": 50, "medium": 75, "high": 100}[strength]
+        img = image_tensor.cpu().numpy()[0].transpose(1,2,0)
+        img = cv2.bilateralFilter(img, d, sigma_color, sigma_space)
+        return torch.from_numpy(img.transpose(2,0,1)).unsqueeze(0).to(self.device)
+
+    def _tv_denoising(self, image_tensor, strength):
+        weight = {"low": 0.1, "medium": 0.2, "high": 0.4}[strength]
+        img = image_tensor.clone().cpu().numpy()[0].transpose(1,2,0)
+        for _ in range(5):
+            grad_y = np.roll(img, -1, axis=0) - img
+            grad_x = np.roll(img, -1, axis=1) - img
+            img += weight * (grad_x + grad_y)
+            img = np.clip(img, 0, 1)
+        return torch.from_numpy(img.transpose(2,0,1)).unsqueeze(0).to(self.device)
+
+    def _randomized_smoothing(self, image_tensor, strength):
+        sigma = {"low": 0.02, "medium": 0.05, "high": 0.1}[strength]
+        noise = torch.randn_like(image_tensor) * sigma
+        return torch.clamp(image_tensor + noise.to(self.device), 0, 1)
+
+    def _pixel_deflection(self, image_tensor, strength):
+        prob = {"low": 0.01, "medium": 0.05, "high": 0.1}[strength]
+        img = image_tensor.clone().cpu().numpy()[0].transpose(1,2,0)
+        h,w = img.shape[:2]
+        mask = np.random.rand(h,w) < prob
+        for y,x in zip(*np.where(mask)):
+            ny, nx = np.random.randint(0,h), np.random.randint(0,w)
+            img[y,x] = img[ny,nx]
+        return torch.from_numpy(img.transpose(2,0,1)).unsqueeze(0).to(self.device)
+
+    def _quilting(self, image_tensor, strength):
+        # Placeholder: simple patch replacement
+        patch_size = {"low": 16, "medium": 8, "high": 4}[strength]
+        img = image_tensor.clone()
+        # For demo, we just pass through the image
+        return img
+
+    def _autoencoder_restoration(self, image_tensor, strength):
+        # Placeholder: fallback to bilateral filter
+        return self._bilateral_filter(image_tensor, strength)
+
+    def _diff_jpeg(self, image_tensor, strength):
+        quality = {"low": 50, "medium": 30, "high": 10}[strength]
+        steps = 256 // quality
+        img = torch.round(image_tensor * 255 / steps) * steps / 255.0
+        return torch.clamp(img, 0, 1)

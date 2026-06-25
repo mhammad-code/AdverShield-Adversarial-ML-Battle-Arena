@@ -26,8 +26,9 @@ class StatsModel:
         attack_battles = [b for b in battles if b.get('mode') == 'attack']
         defend_battles = [b for b in battles if b.get('mode') == 'defend']
 
-        attack_wins = sum(1 for b in attack_battles if b.get('attacker_won', False))
-        defend_wins = sum(1 for b in defend_battles if not b.get('attacker_won', False))
+        # Use independent attack_success / defense_success fields
+        attack_wins = sum(1 for b in attack_battles if b.get('attack_success', False) or b.get('attacker_won', False))
+        defend_wins = sum(1 for b in defend_battles if b.get('defense_success', False))
 
         avg_original_conf = sum(b.get('original_confidence', 0) for b in battles) / total if total > 0 else 0
         avg_adv_conf = sum(b.get('adversarial_confidence', 0) for b in battles) / total if total > 0 else 0
@@ -38,7 +39,6 @@ class StatsModel:
             "defend_battles": len(defend_battles),
             "attack_win_rate": attack_wins / len(attack_battles) if attack_battles else 0,
             "defense_win_rate": defend_wins / len(defend_battles) if defend_battles else 0,
-            "defend_win_rate": defend_wins / len(defend_battles) if defend_battles else 0,
             "avg_original_confidence": round(avg_original_conf, 4),
             "avg_adversarial_confidence": round(avg_adv_conf, 4),
             "confidence_drop": round(avg_original_conf - avg_adv_conf, 4)
@@ -57,11 +57,11 @@ class StatsModel:
             
             if b.get('mode') == 'attack':
                 attack_types[at]["total"] += 1
-                if b.get('attacker_won', False):
+                if b.get('attack_success', False) or b.get('attacker_won', False):
                     attack_types[at]["wins"] += 1
             elif b.get('mode') == 'defend':
                 defense_types[dt]["total"] += 1
-                if not b.get('attacker_won', False):
+                if b.get('defense_success', False):
                     defense_types[dt]["wins"] += 1
 
         return {
@@ -93,8 +93,8 @@ class StatsModel:
         if not early:
             return {"message": "Not enough data for trends"}
         
-        early_win_rate = sum(1 for b in early if b.get('attacker_won', False)) / len(early) if early else 0
-        recent_win_rate = sum(1 for b in recent if b.get('attacker_won', False)) / len(recent) if recent else 0
+        early_win_rate = sum(1 for b in early if b.get('attack_success', False) or b.get('attacker_won', False)) / len(early) if early else 0
+        recent_win_rate = sum(1 for b in recent if b.get('attack_success', False) or b.get('attacker_won', False)) / len(recent) if recent else 0
         
         return {
             "attacker_trend": "increasing" if recent_win_rate > early_win_rate else "decreasing",

@@ -3,13 +3,14 @@ import numpy as np
 import cv2
 import json
 import re
+import io
 from PIL import Image, ImageFilter
 import torch.nn as nn
 from config import DEVICE, EPSILON_MAP, STEPS_MAP
 
 try:
     from art.estimators.classification import PyTorchClassifier
-    from art.attacks.evasion import FastGradientMethod, ProjectedGradientDescent
+    from art.attacks.evasion import FastGradientMethod, ProjectedGradientDescent, DeepFool as ARTDeepFool
     HAS_ART = True
 except ImportError:
     HAS_ART = False
@@ -42,6 +43,22 @@ class AttackEngine:
             return self._pgd(image_tensor, strength), None
         elif attack_type == "cw":
             return self._cw(image_tensor, strength), None
+        elif attack_type == "bim":
+            return self._bim(image_tensor, strength), None
+        elif attack_type == "deepfool":
+            return self._deepfool(image_tensor, strength), None
+        elif attack_type == "salt_pepper":
+            return self._salt_pepper(image_tensor, strength), None
+        elif attack_type == "contrast_shift":
+            return self._contrast_shift(image_tensor, strength), None
+        elif attack_type == "jpeg_attack":
+            return self._jpeg_attack(image_tensor, strength), None
+        elif attack_type == "frequency_filter":
+            return self._frequency_filter(image_tensor, strength), None
+        elif attack_type == "spatial_perturbation":
+            return self._spatial_perturbation(image_tensor, strength), None
+        elif attack_type == "universal_perturbation":
+            return self._universal_perturbation(image_tensor, strength), None
         else:
             return self._fgsm(image_tensor, strength), None
 
@@ -210,7 +227,6 @@ Reply with this exact JSON:
     def _cw(self, image_tensor, strength):
         epsilon = EPSILON_MAP.get(strength, 0.03)
         img = image_tensor.clone().detach().to(self.device)
-
         with torch.no_grad():
             logits = self.target_model.model(img)
             orig_class = logits.argmax(dim=1).item()
@@ -233,16 +249,90 @@ Reply with this exact JSON:
         adversarial = torch.clamp(img + delta.detach(), 0, 1)
         return adversarial
 
+    # ---------- New Attacks ----------
+    def _bim(self, image_tensor, strength):
+        epsilon = EPSILON_MAP.get(strength, 0.03)
+        steps = STEPS_MAP.get(strength, 20)
+        alpha = epsilon / steps * 2
+        img = image_tensor.clone().detach().to(self.device)
+        for _ in range(steps):
+            img.requires_grad_(True)
+            with torch.enable_grad():
+                logits = self.target_model.model(img)
+            self.target_model.model.zero_grad()
+            loss = -logits[0, logits.argmax()]
+            loss.backward()
+            grad = img.grad.data.sign()
+            img = img.detach() + alpha * grad
+            img = torch.min(torch.max(img, image_tensor - epsilon), image_tensor + epsilon)
+            img = torch.clamp(img, 0, 1)
+        return img
+
+    def _deepfool(self, image_tensor, strength):
+        if HAS_ART:
+            attack = ARTDeepFool(classifier=self.classifier, max_iter=STEPS_MAP.get(strength, 20), epsilon=EPSILON_MAP.get(strength, 0.03))
+            adv_np = attack.generate(x=image_tensor.cpu().numpy())
+            return torch.from_numpy(np.clip(adv_np, 0, 1)).to(self.device)
+        return self._fgsm(image_tensor, strength)
+
+    def _salt_pepper(self, image_tensor, strength):
+        density = {"low": 0.01, "medium": 0.03, "high": 0.08}.get(strength, 0.03)
+        img = image_tensor.clone().cpu().numpy()[0].transpose(1,2,0)
+        mask = np.random.random(img.shape[:2])
+        img[mask < density/2] = 0.0
+        img[mask > 1 - density/2] = 1.0
+        return torch.from_numpy(img.transpose(2,0,1)).unsqueeze(0).to(self.device)
+
+    def _contrast_shift(self, image_tensor, strength):
+        factor = {"low": 0.9, "medium": 0.7, "high": 0.5}[strength]
+        img = image_tensor.clone().cpu().numpy()[0].transpose(1,2,0)
+        img = (img - 0.5) * factor + 0.5
+        img = np.clip(img, 0, 1)
+        return torch.from_numpy(img.transpose(2,0,1)).unsqueeze(0).to(self.device)
+
+    def _jpeg_attack(self, image_tensor, strength):
+        quality = {"low": 50, "medium": 30, "high": 10}[strength]
+        img_np = (image_tensor.cpu().numpy()[0].transpose(1,2,0)*255).astype(np.uint8)
+        pil_img = Image.fromarray(img_np)
+        buf = io.BytesIO()
+        pil_img.save(buf, format='JPEG', quality=quality)
+        buf.seek(0)
+        jpeg_img = np.array(Image.open(buf).convert('RGB')).astype(np.float32)/255.0
+        return torch.from_numpy(jpeg_img.transpose(2,0,1)).unsqueeze(0).to(self.device)
+
+    def _frequency_filter(self, image_tensor, strength):
+        cutoff = {"low": 20, "medium": 10, "high": 5}[strength]
+        img = image_tensor.clone().cpu().numpy()[0].transpose(1,2,0)
+        f = np.fft.fftshift(np.fft.fft2(img, axes=(0,1)), axes=(0,1))
+        h,w = img.shape[:2]
+        cy,cx = h//2, w//2
+        mask = np.ones((h,w))
+        for y in range(h):
+            for x in range(w):
+                if np.sqrt((y-cy)**2 + (x-cx)**2) < cutoff:
+                    mask[y,x] = 0
+        f *= mask[..., None]
+        img = np.real(np.fft.ifft2(np.fft.ifftshift(f, axes=(0,1)), axes=(0,1)))
+        img = np.clip(img, 0, 1)
+        return torch.from_numpy(img.transpose(2,0,1)).unsqueeze(0).to(self.device)
+
+    def _spatial_perturbation(self, image_tensor, strength):
+        degrees = {"low": 2, "medium": 5, "high": 10}[strength]
+        img_np = (image_tensor.cpu().numpy()[0].transpose(1,2,0)*255).astype(np.uint8)
+        rows,cols = img_np.shape[:2]
+        angle = np.random.uniform(-degrees, degrees)
+        M = cv2.getRotationMatrix2D((cols/2, rows/2), angle, 1)
+        img_rot = cv2.warpAffine(img_np, M, (cols, rows), borderMode=cv2.BORDER_REFLECT)
+        return torch.from_numpy(img_rot.astype(np.float32)/255.0).permute(2,0,1).unsqueeze(0).to(self.device)
+
+    def _universal_perturbation(self, image_tensor, strength):
+        epsilon = EPSILON_MAP.get(strength, 0.03)
+        seed = hash(str(image_tensor.shape))
+        rng = np.random.default_rng(seed)
+        perturbation = rng.normal(0, epsilon, image_tensor.shape).astype(np.float32)
+        return torch.clamp(image_tensor + torch.from_numpy(perturbation).to(self.device), 0, 1)
+
     def _simple_noise(self, image_tensor, strength):
         epsilon = EPSILON_MAP.get(strength, 0.03)
         noise = torch.randn_like(image_tensor) * epsilon
         return torch.clamp(image_tensor + noise, 0, 1)
-
-    def get_attack_info(self, attack_type, strength):
-        descriptions = {
-            "fgsm": f"FGSM with epsilon={EPSILON_MAP.get(strength, 0.03)}",
-            "pgd": f"PGD with epsilon={EPSILON_MAP.get(strength, 0.03)}, steps={STEPS_MAP.get(strength, 20)}",
-            "cw": "Carlini-Wagner L2 optimization attack",
-            "ai": "LLM-generated adversarial strategy"
-        }
-        return {"type": attack_type, "strength": strength, "description": descriptions.get(attack_type, attack_type)}
